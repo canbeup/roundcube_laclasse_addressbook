@@ -1,0 +1,13 @@
+<?php
+//
+// Laclasse address book configuration file
+//
+//
+
+$config['laclasse_addressbook_api_user'] = 'http://www.dev.laclasse.com/api/app/users/';
+$config['laclasse_addressbook_api_etab'] = 'http://www.dev.laclasse.com/api/app/etablissements/';
+$config['laclasse_addressbook_api_avatar'] = '/api/avatar/';
+$config['laclasse_addressbook_app_id'] = 'MAIL';
+$config['laclasse_addressbook_api_key'] = 'api_authorized_key';
+
+

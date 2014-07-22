@@ -9,7 +9,7 @@ require_once(dirname(__FILE__) . '/laclasse_addressbook_backend.php');
  * @license GPLv3+
  * @author Daniel Lacroix
  */
-class laclasse_addressbook extends rcube_plugin
+class roundcube_laclasse_addressbook extends rcube_plugin
 {
   private $abooks = null;
 

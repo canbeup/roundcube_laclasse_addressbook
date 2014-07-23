@@ -9,6 +9,8 @@
 //}
 
 function generer_appel($url, $app_id, $api_key, $params) {
+   // clean up multiples '/' in the URL
+   $url = preg_replace('/([^:])[\/]{2,}/', '$1/', $url);
    $canonical_string = $url."?";
    $query_string = "";
    // 1. trier les paramètres

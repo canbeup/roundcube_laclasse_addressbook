@@ -100,7 +100,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
 
 		$photo = null;
 		if(($record->avatar !== null) && ($record->avatar !== 'empty')) {
-			$photo = $this->cfg['laclasse_addressbook_api_avatar'].'user/'.$record->{'id_ent'}{0}.'/'.$record->{'id_ent'}{1}.'/'.$record->{'id_ent'}{2}.'/'.$record->avatar;
+			$photo = $this->cfg['laclasse_addressbook_api_avatar'].$record->avatar;
 		}
 
 		array_push($this->persons, array(

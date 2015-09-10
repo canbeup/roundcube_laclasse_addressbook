@@ -99,7 +99,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
 		}
 
 		$photo = null;
-		if(($record->avatar !== null) && ($record->avatar !== 'empty')) {
+		if(($record->avatar !== null) && ($record->avatar !== 'empty') && (strpos($record->avatar, '/default_avatar/') === false)) {
 			$photo = $this->cfg['laclasse_addressbook_api_avatar'].$record->avatar;
 		}
 

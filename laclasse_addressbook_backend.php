@@ -33,7 +33,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
     $cfg = rcmail::get_instance()->config->all();
     $this->cfg = $cfg;
 	$this->data = json_decode(interroger_annuaire_ENT(
-      $cfg['laclasse_addressbook_api_etab'].$id.'/users',
+      $cfg['laclasse_addressbook_api_etab'].$id,
       $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
         array('expand' => 'true')));
 
@@ -64,37 +64,36 @@ class laclasse_addressbook_backend extends rcube_addressbook
 
   function load_persons()
   {
-	$this->persons = array();
+	// load groups
+	foreach($this->data->groups as $record) {
+		$this->allGroups[$record->id] = array('ID' => $record->id, 'name' => ($record->libelle !== null) ? $record->libelle : $record->libelle_aaf);
+	}
+	foreach($this->data->profils as $record) {
+		$this->allGroups[$record->id] = array('ID' => $record->id, 'name' => $record->description);
+	}
 
-	foreach($this->data->data as $record) {
+	$this->persons = array();
+	foreach($this->data->users as $record) {
 		$email = null;
 		if($record->emails !== null) {
 			foreach($record->emails as $emailRecord) {
-				if(($email === null) || ($emailRecord->principal === "1") || ($emailRecord->type === "Ent"))
+				if(($email === null) || ($emailRecord->main) || ($emailRecord->type === "Ent"))
 					$email = $emailRecord->adresse;
 			}
 		}
 
 		// search groups
 		$groups = array();
-		if($record->eleve_regroupements !== null) {
-			foreach($record->eleve_regroupements as $groupRecord) {
-				// if its a new group for us, add it
-				if(!array_key_exists($groupRecord->id, $this->allGroups)) {
-					$this->allGroups[$groupRecord->id] = array('ID' => $groupRecord->id, 'name' => $groupRecord->libelle);
-				}
-				array_push($groups, $groupRecord->id);
+		if($record->student_in_groups !== null) {
+			foreach($record->student_in_groups as $groupRecord) {
+				array_push($groups, $groupRecord);
 			}
 		}
 
 		// handle profils like groups
 		if($record->profils !== null) {
 			foreach($record->profils as $groupRecord) {
-				// if its a new group for us, add it
-				if(!array_key_exists($groupRecord->id, $this->allProfils)) {
-					$this->allProfils[$groupRecord->id] = array('ID' => $groupRecord->id, 'name' => $groupRecord->libelle);
-				}
-				array_push($groups, $groupRecord->id);
+				array_push($groups, $groupRecord);
 			}
 		}
 
@@ -104,10 +103,10 @@ class laclasse_addressbook_backend extends rcube_addressbook
 		}
 
 		array_push($this->persons, array(
-			'ID' => $record->{'id_ent'},
-			'name' => $record->{'prenom'}.' '.$record->{'nom'},
-			'firstname' => $record->{'prenom'},
-			'surname' => $record->{'nom'},
+			'ID' => $record->{'ent_id'},
+			'name' => $record->{'firstname'}.' '.$record->{'lastname'},
+			'firstname' => $record->{'firstname'},
+			'surname' => $record->{'lastname'},
 			'email' => $email,
 			'photo' => $photo,
 			'groups' => $groups
@@ -144,15 +143,17 @@ class laclasse_addressbook_backend extends rcube_addressbook
 	if($search === null)
 		return $all;
 	else {
-		$words = explode(' ', $search);
+		$words = array();
+	    foreach(explode(' ', $search) as $word) {
+			array_push($words, iconv('UTF-8', 'ASCII//TRANSLIT', strtolower($word)));
+		}
 		$res = array();
 		foreach($all as $item) {
 			$match = true;
 			foreach($words as $word) {
-				$word = strtolower($word);
 				$word_match = false;
 				foreach($fields as $field) {
-					$word_match = $word_match || (strrpos(strtolower($item[$field]), $word) !== false);
+					$word_match = $word_match || (strrpos(iconv('UTF-8', 'ASCII//TRANSLIT', strtolower($item[$field])), $word) !== false);
 				}
 				$match = $match && $word_match;
 			}

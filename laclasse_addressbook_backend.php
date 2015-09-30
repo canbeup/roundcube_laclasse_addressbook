@@ -66,7 +66,8 @@ class laclasse_addressbook_backend extends rcube_addressbook
   {
 	// load groups
 	foreach($this->data->groups as $record) {
-		$this->allGroups[$record->id] = array('ID' => $record->id, 'name' => ($record->libelle !== null) ? $record->libelle : $record->libelle_aaf);
+		$this->allGroups['ENS' . $record->id] = array('ID' => 'ENS' . $record->id, 'name' => (($record->libelle !== null) ? $record->libelle : $record->libelle_aaf) . ' Enseignants');
+		$this->allGroups['ELV' . $record->id] = array('ID' => 'ELV' . $record->id, 'name' => (($record->libelle !== null) ? $record->libelle : $record->libelle_aaf) . ' Élèves');
 	}
 	foreach($this->data->profils as $record) {
 		$this->allGroups[$record->id] = array('ID' => $record->id, 'name' => $record->description);
@@ -78,7 +79,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
 		if($record->emails !== null) {
 			foreach($record->emails as $emailRecord) {
 				if(($email === null) || ($emailRecord->main) || ($emailRecord->type === "Ent"))
-					$email = $emailRecord->adresse;
+					$email = $emailRecord->email;
 			}
 		}
 
@@ -86,7 +87,12 @@ class laclasse_addressbook_backend extends rcube_addressbook
 		$groups = array();
 		if($record->student_in_groups !== null) {
 			foreach($record->student_in_groups as $groupRecord) {
-				array_push($groups, $groupRecord);
+				array_push($groups, 'ELV' . $groupRecord);
+			}
+		}
+		if($record->teacher_in_groups !== null) {
+			foreach($record->teacher_in_groups as $groupRecord) {
+				array_push($groups, 'ENS' . $groupRecord);
 			}
 		}
 
@@ -184,6 +190,11 @@ class laclasse_addressbook_backend extends rcube_addressbook
   }
 
   static function group_cmp($a, $b)
+  {
+    return strcmp($a["name"], $b["name"]);
+  }
+
+  static function user_cmp($a, $b)
   {
     return strcmp($a["name"], $b["name"]);
   }

@@ -66,11 +66,12 @@ class laclasse_addressbook_backend extends rcube_addressbook
   {
 	// load groups
 	foreach($this->data->groups as $record) {
-		$this->allGroups['ENS' . $record->id] = array('ID' => 'ENS' . $record->id, 'name' => (($record->libelle !== null) ? $record->libelle : $record->libelle_aaf) . ' Enseignants');
-		$this->allGroups['ELV' . $record->id] = array('ID' => 'ELV' . $record->id, 'name' => (($record->libelle !== null) ? $record->libelle : $record->libelle_aaf) . ' Élèves');
+		$name = (($record->libelle !== null) ? $record->libelle : $record->libelle_aaf);
+		$this->allGroups['ENS' . $record->id] = array('ID' => 'ENS' . $record->id, 'sortname' => $name, 'name' => $name . ' Enseignants');
+		$this->allGroups['ELV' . $record->id] = array('ID' => 'ELV' . $record->id, 'sortname' => $name, 'name' => $name  . ' Élèves');
 	}
 	foreach($this->data->profils as $record) {
-		$this->allGroups[$record->id] = array('ID' => $record->id, 'name' => $record->description);
+		$this->allGroups[$record->id] = array('ID' => $record->id, 'sortname' => $record->description, 'name' => $record->description);
 	}
 
 	$this->persons = array();
@@ -191,7 +192,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
 
   static function group_cmp($a, $b)
   {
-    return strcmp($a["name"], $b["name"]);
+    return strcmp($a["sortname"], $b["sortname"]);
   }
 
   static function user_cmp($a, $b)

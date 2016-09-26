@@ -79,7 +79,13 @@ class laclasse_addressbook_backend extends rcube_addressbook
 		$email = null;
 		if($record->emails !== null) {
 			foreach($record->emails as $emailRecord) {
-				if(($email === null) || ($emailRecord->main) || ($emailRecord->type === "Ent"))
+				if($emailRecord->main) {
+					$email = $emailRecord->email;
+					$main = TRUE;
+				}
+				else if($email === null)
+					$email = $emailRecord->email;
+				else if(($emailRecord->type === "Ent") && ($main === FALSE))
 					$email = $emailRecord->email;
 			}
 		}

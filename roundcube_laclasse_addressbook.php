@@ -40,18 +40,21 @@ class roundcube_laclasse_addressbook extends rcube_plugin
       $this->abooks = array();
 
       $cfg = rcmail::get_instance()->config->all();
+      $username = rcmail::get_instance()->user->get_username(true);
 
-      $user_data = json_decode(interroger_annuaire_ENT(
-        $cfg['laclasse_addressbook_api_user'].rcmail::get_instance()->user->get_username(true),
-        $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
-        array('expand' => 'true')));
+      if(gettype($username) === 'string') {
+        $user_data = json_decode(interroger_annuaire_ENT(
+          $cfg['laclasse_addressbook_api_user'].$username,
+          $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
+          array('expand' => 'true')));
 
-      if($user_data->etablissements !== null) {
-        foreach($user_data->etablissements as $etab) {
-          $abook = array(
-            'id' => $etab->code_uai, 'name' => $etab->nom, 
-            'readonly' => true, 'groups' => true, 'autocomplete' => true);
-          $this->abooks[] = $abook;
+        if($user_data->etablissements !== null) {
+          foreach($user_data->etablissements as $etab) {
+            $abook = array(
+              'id' => $etab->code_uai, 'name' => $etab->nom, 
+              'readonly' => true, 'groups' => true, 'autocomplete' => true);
+            $this->abooks[] = $abook;
+         }
         }
       }
     }

@@ -45,16 +45,24 @@ class roundcube_laclasse_addressbook extends rcube_plugin
       if(gettype($username) === 'string') {
         $user_data = json_decode(interroger_annuaire_ENT(
           $cfg['laclasse_addressbook_api_user'].$username,
-          $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
-          array('expand' => 'true')));
+          $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key']));
 
-        if($user_data->etablissements !== null) {
-          foreach($user_data->etablissements as $etab) {
-            $abook = array(
-              'id' => $etab->code_uai, 'name' => $etab->nom, 
-              'readonly' => true, 'groups' => true, 'autocomplete' => true);
-            $this->abooks[] = $abook;
-         }
+        if($user_data->profils !== null) {
+          foreach($user_data->profils as $profil) {
+            $found = false;
+            foreach($this->abooks as $a) {
+              if($a->id === $profil->etablissement_code_uai) {
+                $found = true;
+                break;
+              }
+            }
+            if(!$found) {
+              $abook = array(
+                'id' => $profil->etablissement_code_uai, 'name' => $profil->etablissement_nom, 
+                'readonly' => true, 'groups' => true, 'autocomplete' => true);
+              $this->abooks[] = $abook;
+            }
+          }
         }
       }
     }

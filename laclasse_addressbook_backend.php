@@ -35,7 +35,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
 	$this->data = json_decode(interroger_annuaire_ENT(
       $cfg['laclasse_addressbook_api_etab'].$id,
       $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
-        array('expand' => 'true')));
+      array('expand' => 'true')));
 
 	$this->load_persons();
     $this->ready = true;

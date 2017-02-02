@@ -23,9 +23,11 @@ class laclasse_addressbook_backend extends rcube_addressbook
   private $allGroups;
   private $allProfils;
   private $cfg;
+  private $user;
 
-  public function __construct($id, $name)
+  public function __construct($id, $name, $user_data)
   {
+    $this->user = $user_data;
 	$this->id = $id;
     $this->name = $name;
 	$this->allGroups = array();
@@ -36,6 +38,16 @@ class laclasse_addressbook_backend extends rcube_addressbook
       $cfg['laclasse_addressbook_api_etab'].$id,
       $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
       array('expand' => 'true')));
+
+	// check if the user is only a student ('ELV') in the current structure
+	$this->profil_elv = true;
+	foreach($this->user->profils as $p) {
+		if($p->etablissement_code_uai === $id) {
+			if($p->profil_id !== 'ELV') {
+                $this->profil_elv = false;
+			}
+		}
+	}
 
 	$this->load_persons();
     $this->ready = true;
@@ -71,12 +83,22 @@ class laclasse_addressbook_backend extends rcube_addressbook
 		$this->allGroups['ELV' . $record->id] = array('ID' => 'ELV' . $record->id, 'sortname' => $name, 'name' => $name  . ' Élèves');
 	}
 	foreach($this->data->profils as $record) {
+		// RIGHTS: student cant see parents emails
+		if($this->profil_elv && ($record->id == 'TUT')) {
+			continue;
+		}
+
 		$this->allGroups[$record->id] = array('ID' => $record->id, 'sortname' => $record->description, 'name' => $record->description);
 	}
 
 	$this->persons = array();
 	foreach($this->data->users as $record) {
 		$email = null;
+		// RIGHTS: student cant see parents emails
+		if($this->profil_elv && (count($record->profils) == 1) && ($record->profils[0] == 'TUT')) {
+			continue;
+		}
+
 		if($record->emails !== null) {
 			foreach($record->emails as $emailRecord) {
 				if($emailRecord->main) {

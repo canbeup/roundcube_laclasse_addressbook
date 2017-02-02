@@ -59,7 +59,7 @@ class roundcube_laclasse_addressbook extends rcube_plugin
             if(!$found) {
               $abook = array(
                 'id' => $profil->etablissement_code_uai, 'name' => $profil->etablissement_nom, 
-                'readonly' => true, 'groups' => true, 'autocomplete' => true);
+                'readonly' => true, 'groups' => true, 'autocomplete' => true, 'user' => $user_data);
               $this->abooks[] = $abook;
             }
           }
@@ -80,7 +80,7 @@ class roundcube_laclasse_addressbook extends rcube_plugin
   {
     foreach($this->abooks as $abook) {
       if($p['id'] === $abook['id'])
-        $p['instance'] = new laclasse_addressbook_backend($abook['id'], $abook['name']);
+        $p['instance'] = new laclasse_addressbook_backend($abook['id'], $abook['name'], $abook['user']);
     }
     return $p;
   }

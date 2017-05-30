@@ -41,14 +41,15 @@ class roundcube_laclasse_addressbook extends rcube_plugin
 
       $cfg = rcmail::get_instance()->config->all();
       $username = rcmail::get_instance()->user->get_username(true);
-      $username = strtoupper($username);
 
       // error_log(print_r(rcmail::get_instance()->user, true));
-
-      if(gettype($username) === 'string') {
+      
+      if((gettype($username) === 'string') && ($username != '')) {
+        $username = strtoupper($username);
         $user_data = json_decode(interroger_annuaire_ENT(
           $cfg['laclasse_addressbook_api_user'].$username,
-          $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'], array()));
+          $cfg['laclasse_addressbook_app_id'],
+          $cfg['laclasse_addressbook_api_key'], array()));
 
         $user_structures = json_decode(interroger_annuaire_ENT(
           $cfg['laclasse_addressbook_api_etab'],

@@ -24,6 +24,8 @@ class laclasse_addressbook_backend extends rcube_addressbook
   private $allProfils;
   private $cfg;
   private $user;
+  private $groupsData;
+  private $profilesTypes;
 
   public function __construct($id, $name, $user_data)
   {
@@ -34,16 +36,26 @@ class laclasse_addressbook_backend extends rcube_addressbook
 	$this->allProfils = array();
     $cfg = rcmail::get_instance()->config->all();
     $this->cfg = $cfg;
-	$this->data = json_decode(interroger_annuaire_ENT(
-      $cfg['laclasse_addressbook_api_etab'].$id,
+
+    $this->profilesTypes = json_decode(interroger_annuaire_ENT(
+      $cfg['laclasse_addressbook_api_profiles_types'],
+      $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'], array()));
+
+    $this->data = json_decode(interroger_annuaire_ENT(
+      $cfg['laclasse_addressbook_api_user'],
       $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
-      array('expand' => 'true')));
+      array('profiles.structure_id' => $id)));
+
+	$this->groupsData = json_decode(interroger_annuaire_ENT(
+      $cfg['laclasse_addressbook_api_group']."?structure_id=".$id,
+      $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
+      array()));
 
 	// check if the user is only a student ('ELV') in the current structure
 	$this->profil_elv = true;
-	foreach($this->user->profils as $p) {
-		if($p->etablissement_code_uai === $id) {
-			if($p->profil_id !== 'ELV') {
+	foreach($this->user->profiles as $p) {
+		if($p->structure_id === $id) {
+			if($p->type !== 'ELV') {
                 $this->profil_elv = false;
 			}
 		}
@@ -77,58 +89,55 @@ class laclasse_addressbook_backend extends rcube_addressbook
   function load_persons()
   {
 	// load groups
-	foreach($this->data->groups as $record) {
-		$name = (($record->libelle !== null) ? $record->libelle : $record->libelle_aaf);
+	foreach($this->groupsData as $record) {
+		$name = $record->name;
 		$this->allGroups['ENS' . $record->id] = array('ID' => 'ENS' . $record->id, 'sortname' => $name, 'name' => $name . ' Enseignants');
 		$this->allGroups['ELV' . $record->id] = array('ID' => 'ELV' . $record->id, 'sortname' => $name, 'name' => $name  . ' Élèves');
 	}
-	foreach($this->data->profils as $record) {
+
+	foreach($this->profilesTypes as $record) {
 		// RIGHTS: student cant see parents emails
 		if($this->profil_elv && ($record->id == 'TUT')) {
 			continue;
 		}
 
-		$this->allGroups[$record->id] = array('ID' => $record->id, 'sortname' => $record->description, 'name' => $record->description);
+		$this->allGroups[$record->id] = array('ID' => $record->id, 'sortname' => $record->name, 'name' => $record->name);
 	}
 
 	$this->persons = array();
-	foreach($this->data->users as $record) {
+	foreach($this->data as $record) {
 		$email = null;
 		// RIGHTS: student cant see parents emails
-		if($this->profil_elv && (count($record->profils) == 1) && ($record->profils[0] == 'TUT')) {
+		if($this->profil_elv && (count($record->profiles) == 1) && ($record->profiles[0]->type == 'TUT')) {
 			continue;
 		}
 
 		if($record->emails !== null) {
 			foreach($record->emails as $emailRecord) {
-				if($emailRecord->main) {
-					$email = $emailRecord->email;
+				if($emailRecord->primary) {
+					$email = $emailRecord->address;
 					$main = TRUE;
 				}
 				else if($email === null)
-					$email = $emailRecord->email;
+					$email = $emailRecord->address;
 				else if(($emailRecord->type === "Ent") && ($main === FALSE))
-					$email = $emailRecord->email;
+					$email = $emailRecord->address;
 			}
 		}
 
 		// search groups
 		$groups = array();
-		if($record->student_in_groups !== null) {
-			foreach($record->student_in_groups as $groupRecord) {
-				array_push($groups, 'ELV' . $groupRecord);
-			}
-		}
-		if($record->teacher_in_groups !== null) {
-			foreach($record->teacher_in_groups as $groupRecord) {
-				array_push($groups, 'ENS' . $groupRecord);
+		if($record->groups !== null) {
+			foreach($record->groups as $groupRecord) {
+                if (($groupRecord->type == 'ENS') || ($groupRecord->type == 'ELV'))
+				array_push($groups, $groupRecord->type . $groupRecord->group_id);
 			}
 		}
 
 		// handle profils like groups
-		if($record->profils !== null) {
-			foreach($record->profils as $groupRecord) {
-				array_push($groups, $groupRecord);
+		if($record->profiles !== null) {
+			foreach($record->profiles as $groupRecord) {
+				array_push($groups, $groupRecord->type);
 			}
 		}
 
@@ -138,7 +147,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
 		}
 
 		array_push($this->persons, array(
-			'ID' => $record->{'ent_id'},
+			'ID' => $record->{'id'},
 			'name' => $record->{'firstname'}.' '.$record->{'lastname'},
 			'firstname' => $record->{'firstname'},
 			'surname' => $record->{'lastname'},
@@ -228,7 +237,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
     return strcmp($a["name"], $b["name"]);
   }
 
-  function list_groups($search = null)
+  function list_groups($search = null, $mode = 0)
   {
 	$allProfils = array();
 	foreach($this->allProfils as $group) {
@@ -316,7 +325,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
     return false;
   }
 
-  function rename_group($gid, $newname)
+  function rename_group($gid, $newname, &$newid)
   {
     return $newname;
   }

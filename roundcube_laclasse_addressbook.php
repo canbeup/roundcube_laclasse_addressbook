@@ -41,27 +41,34 @@ class roundcube_laclasse_addressbook extends rcube_plugin
 
       $cfg = rcmail::get_instance()->config->all();
       $username = rcmail::get_instance()->user->get_username(true);
+      $username = strtoupper($username);
+
+      // error_log(print_r(rcmail::get_instance()->user, true));
 
       if(gettype($username) === 'string') {
         $user_data = json_decode(interroger_annuaire_ENT(
           $cfg['laclasse_addressbook_api_user'].$username,
-          $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key']));
+          $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'], array()));
 
-        if($user_data->profils !== null) {
-          foreach($user_data->profils as $profil) {
-            $found = false;
-            foreach($this->abooks as $a) {
-              if($a->id === $profil->etablissement_code_uai) {
-                $found = true;
-                break;
-              }
+        $user_structures = json_decode(interroger_annuaire_ENT(
+          $cfg['laclasse_addressbook_api_etab'],
+          $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
+          array("profiles.user_id" => $username)));
+
+        foreach($user_structures as $structure) {
+          $found = false;
+          foreach($this->abooks as $a) {
+            if($a->id === $structure->id) {
+              $found = true;
+              break;
             }
-            if(!$found) {
-              $abook = array(
-                'id' => $profil->etablissement_code_uai, 'name' => $profil->etablissement_nom, 
-                'readonly' => true, 'groups' => true, 'autocomplete' => true, 'user' => $user_data);
-              $this->abooks[] = $abook;
-            }
+          }
+          if(!$found) {
+            $abook = array(
+              'id' => $structure->id, 'name' => $structure->name, 
+              'readonly' => true, 'groups' => true, 'autocomplete' => true, 
+              'user' => $user_data);
+            $this->abooks[] = $abook;
           }
         }
       }

@@ -37,6 +37,16 @@ class laclasse_addressbook_backend extends rcube_addressbook
     $cfg = rcmail::get_instance()->config->all();
     $this->cfg = $cfg;
 
+	// check if the user is only a student ('ELV') in the current structure
+    $this->profil_elv = true;
+    foreach($this->user->profiles as $p) {
+      if($p->structure_id === $id) {
+        if($p->type !== 'ELV') {
+          $this->profil_elv = false;
+        }
+      }
+    }
+
     $this->profilesTypes = json_decode(interroger_annuaire_ENT(
       $cfg['laclasse_addressbook_api_profiles_types'],
       $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'], array()));
@@ -46,23 +56,20 @@ class laclasse_addressbook_backend extends rcube_addressbook
       $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
       array('profiles.structure_id' => $id)));
 
-	$this->groupsData = json_decode(interroger_annuaire_ENT(
-      $cfg['laclasse_addressbook_api_group']."?structure_id=".$id,
-      $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
-      array()));
-
-	// check if the user is only a student ('ELV') in the current structure
-	$this->profil_elv = true;
-	foreach($this->user->profiles as $p) {
-		if($p->structure_id === $id) {
-			if($p->type !== 'ELV') {
-                $this->profil_elv = false;
-			}
-		}
-	}
-
+    if($this->profil_elv) {
+      $this->groupsData = json_decode(interroger_annuaire_ENT(
+        $cfg['laclasse_addressbook_api_group'],
+        $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
+        array("structure_id" => $id, "users.user_id" => $this->user->id)));
+    }
+    else {
+      $this->groupsData = json_decode(interroger_annuaire_ENT(
+        $cfg['laclasse_addressbook_api_group'],
+        $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
+        array("structure_id" => $id)));
+    }
 	$this->load_persons();
-    $this->ready = true;
+	$this->ready = true;
   }
 
   public function get_name()
@@ -84,6 +91,17 @@ class laclasse_addressbook_backend extends rcube_addressbook
   {
     $this->result = null;
     $this->filter = null;
+  }
+
+  function has_intersect_groups($user1, $user2)
+  {
+    foreach($user1->groups as $u1group) {
+      foreach($user2->groups as $u2group) {
+        if($u1group->group_id == $u2group->group_id)
+          return true;
+      }
+    }
+    return false;
   }
 
   function load_persons()
@@ -108,9 +126,18 @@ class laclasse_addressbook_backend extends rcube_addressbook
 	foreach($this->data as $record) {
 		$email = null;
 		// RIGHTS: student cant see parents emails
-		if($this->profil_elv && (count($record->profiles) == 1) && ($record->profiles[0]->type == 'TUT')) {
+		if($this->profil_elv && (count($record->profiles) == 1) && ($record->profiles[0]->type == 'TUT'))
 			continue;
-		}
+
+        // RIGHTS: student can only see students in their groups
+        if($this->profil_elv && (count($record->profiles) == 1) &&
+           ($record->profiles[0]->type == 'ELV') && !$this->has_intersect_groups($this->user, $record))
+          continue;
+
+        // RIGHTS: student can only see teachers in their groups
+        if($this->profil_elv && (count($record->profiles) == 1) &&
+           ($record->profiles[0]->type == 'ENS') && !$this->has_intersect_groups($this->user, $record))
+          continue;
 
 		if($record->emails !== null) {
 			foreach($record->emails as $emailRecord) {

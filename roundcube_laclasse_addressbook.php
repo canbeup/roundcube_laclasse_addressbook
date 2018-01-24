@@ -51,7 +51,7 @@ class roundcube_laclasse_addressbook extends rcube_plugin
           $cfg['laclasse_addressbook_app_id'],
           $cfg['laclasse_addressbook_api_key'], array()));
 
-        $user_structures = json_decode(interroger_annuaire_ENT(
+       $user_structures = json_decode(interroger_annuaire_ENT(
           $cfg['laclasse_addressbook_api_etab'],
           $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
           array("profiles.user_id" => $username)));
@@ -72,6 +72,27 @@ class roundcube_laclasse_addressbook extends rcube_plugin
             $this->abooks[] = $abook;
           }
         }
+        
+        // Ask directory for all the free groups the user is part of
+        $freeGroups = json_decode(interroger_annuaire_ENT(
+          $cfg['laclasse_addressbook_api_group'],
+          $cfg['laclasse_addressbook_app_id'],
+          $cfg['laclasse_addressbook_api_key'], 
+          array('structure_id' => 'NULL','sort_dir' => 'asc','sort_col' => 'name','users.user_id' => $username)
+        ));
+
+        if(isset($freeGroups) && !empty($freeGroups)) {
+          foreach ($freeGroups as $freeGroup) {
+            $abook = array(
+              'id' => $freeGroup->id, 
+              'name' => $freeGroup->name, 
+              'readonly' => true,
+              'groups' => false,
+              'autocomplete' => true, 
+              'user' => $user_data);
+            $this->abooks[] = $abook;
+          }
+        }
       }
     }
   }
@@ -87,7 +108,7 @@ class roundcube_laclasse_addressbook extends rcube_plugin
   public function get_address_book($p)
   {
     foreach($this->abooks as $abook) {
-      if($p['id'] === $abook['id'])
+      if($p['id'] == $abook['id'])
         $p['instance'] = new laclasse_addressbook_backend($abook['id'], $abook['name'], $abook['user']);
     }
     return $p;

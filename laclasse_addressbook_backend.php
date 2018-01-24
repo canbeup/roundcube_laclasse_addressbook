@@ -46,23 +46,41 @@ class laclasse_addressbook_backend extends rcube_addressbook
         }
       }
     }
+    // If is_numeric($id) is true, this addressbook 
+    // has contact info about a group
+    // In this case we'll fetch the appropriate data
+
+    if(is_numeric($id)) {
+      $this->profil_elv = false;
+    }
 
     $this->profilesTypes = json_decode(interroger_annuaire_ENT(
       $cfg['laclasse_addressbook_api_profiles_types'],
       $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'], array()));
 
-    $this->data = json_decode(interroger_annuaire_ENT(
-      $cfg['laclasse_addressbook_api_user'],
-      $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
-      array('profiles.structure_id' => $id)));
+    if(is_numeric($id)) {
+      $this->data = json_decode(interroger_annuaire_ENT(
+        $cfg['laclasse_addressbook_api_user'],
+        $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
+        array('groups.group_id' => $id)));
+    } else {
+      $this->data = json_decode(interroger_annuaire_ENT(
+        $cfg['laclasse_addressbook_api_user'],
+        $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
+        array('profiles.structure_id' => $id)));
+    }
 
     if($this->profil_elv) {
       $this->groupsData = json_decode(interroger_annuaire_ENT(
         $cfg['laclasse_addressbook_api_group'],
         $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
         array("structure_id" => $id, "users.user_id" => $this->user->id)));
-    }
-    else {
+    } else if(is_numeric($id)) {
+      $this->groupsData = json_decode(interroger_annuaire_ENT(
+        $cfg['laclasse_addressbook_api_group'],
+        $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
+        array("id" => $id)));
+    } else {
       $this->groupsData = json_decode(interroger_annuaire_ENT(
         $cfg['laclasse_addressbook_api_group'],
         $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
@@ -106,13 +124,13 @@ class laclasse_addressbook_backend extends rcube_addressbook
 
   function load_persons()
   {
-	// load groups
+  // load groups
 	foreach($this->groupsData as $record) {
 		$name = $record->name;
 		$this->allGroups['ENS' . $record->id] = array('ID' => 'ENS' . $record->id, 'sortname' => $name, 'name' => $name . ' Enseignants');
 		$this->allGroups['ELV' . $record->id] = array('ID' => 'ELV' . $record->id, 'sortname' => $name, 'name' => $name  . ' Élèves');
 	}
-
+  
 	foreach($this->profilesTypes as $record) {
 		// RIGHTS: student cant see parents emails
 		if($this->profil_elv && ($record->id == 'TUT')) {
@@ -121,6 +139,13 @@ class laclasse_addressbook_backend extends rcube_addressbook
 
 		$this->allGroups[$record->id] = array('ID' => $record->id, 'sortname' => $record->name, 'name' => $record->name);
 	}
+
+  // If this is a free group addressbook
+  if(is_numeric($this->id)) {
+    $this->allGroups = array();
+		$this->allGroups['ADM' . $this->id] = array('ID' => 'ADM' . $this->id, 'sortname' => 'Administrateur', 'name' => 'Administrateurs');
+    $this->allGroups['MBR' . $this->id] = array('ID' => 'MBR' . $this->id, 'sortname' => 'Membre', 'name' => 'Membres');
+  }
 
 	$this->persons = array();
 	foreach($this->data as $record) {
@@ -156,12 +181,12 @@ class laclasse_addressbook_backend extends rcube_addressbook
 		$groups = array();
 		if($record->groups !== null) {
 			foreach($record->groups as $groupRecord) {
-                if (($groupRecord->type == 'ENS') || ($groupRecord->type == 'ELV'))
+                if (($groupRecord->type == 'ENS') || ($groupRecord->type == 'ELV') || ($groupRecord->type == 'ADM') || ($groupRecord->type == 'MBR'))
 				array_push($groups, $groupRecord->type . $groupRecord->group_id);
 			}
 		}
 
-		// handle profils like groups
+    // handle profils like groups
 		if($record->profiles !== null) {
 			foreach($record->profiles as $groupRecord) {
 				array_push($groups, $groupRecord->type);
@@ -308,7 +333,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
 
   public function count()
   {
-    return new rcube_result_set(1, ($this->list_page-1) * $this->page_size);
+    return $this->list_records();
   }
 
   public function get_result()
@@ -332,7 +357,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
   function get_record_groups($id)
   {
 	$res = $this->filter_field($this->persons, $id, 'ID');
-	if(count($res) > 0) {
+  if(count($res) > 0) {
       $groups = array();
       foreach($res[0]['groups'] as $group)
         $groups[$group] = $group;

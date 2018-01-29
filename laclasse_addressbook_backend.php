@@ -233,31 +233,50 @@ class laclasse_addressbook_backend extends rcube_addressbook
 
   function filter_result($all, $search, $fields)
   {
-	if($fields === '*')
-		$fields = array('name','email','firstname','surname');
+    if($fields === '*') {
+      $fields = array('name','email','firstname','surname');
+    }
+    if($search === null) { 
+      return $all;
+    } else {
+      // Create an array containing all searched elements 
+      $searches = array();
+      if(is_array($search)) {
+        $searches = $search;
+      } else {
+        foreach ($fields as $ignoredValue) {
+          $searches[] = $search;
+        }
+      }
+      // For the searches array created above, seperate each word in that search into an array
+      foreach ($searches as $key => $a_search) {
+        $words = array();
+        foreach(explode(' ', $a_search) as $word) {
+          $words[] = iconv('UTF-8', 'ASCII//TRANSLIT', strtolower($word));
+        }
+        $searches[$key] = $words;
+      }
 
-	if($search === null)
-		return $all;
-	else {
-		$words = array();
-	    foreach(explode(' ', $search) as $word) {
-			array_push($words, iconv('UTF-8', 'ASCII//TRANSLIT', strtolower($word)));
-		}
-		$res = array();
-		foreach($all as $item) {
-			$match = true;
-			foreach($words as $word) {
-				$word_match = false;
-				foreach($fields as $field) {
-					$word_match = $word_match || (strrpos(iconv('UTF-8', 'ASCII//TRANSLIT', strtolower($item[$field])), $word) !== false);
-				}
-				$match = $match && $word_match;
-			}
-			if($match)
-				array_push($res, $item);
-		}
-		return $res;
-	}
+      // For each element in the array to filter
+      // check if each word matches the element it needs to match
+      $res = array();
+      foreach($all as $item) {
+        $match = false;
+        foreach ($fields as $index => $field) {
+          $word_match = false;
+          $words = $searches[$index];
+          foreach($words as $word) {
+            $word_match = $word_match || (strrpos(iconv('UTF-8', 'ASCII//TRANSLIT', strtolower($item[$field])), $word) !== false);
+          }
+          $match = $match || $word_match;
+        }
+
+        if($match && !in_array($item,$res)) {
+          array_push($res, $item);
+        }
+      }
+      return $res;
+    }
   }
 
   function array_to_result($all, $page_size = 2000, $list_page = 1)
@@ -326,7 +345,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
   public function search($fields, $value, $strict=false, $select=true, $nocount=false, $required=array())
   {
 	$this->filter = $value;
-	$res = $this->filter_result($this->persons, $value, $fields);
+  $res = $this->filter_result($this->persons, $value, $fields);
 	$this->result = $this->array_to_result($res);
     return $this->result;
   }

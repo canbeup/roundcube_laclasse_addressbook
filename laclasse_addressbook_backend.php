@@ -244,6 +244,8 @@ class laclasse_addressbook_backend extends rcube_addressbook
       if(is_array($search)) {
         $searches = $search;
       } else {
+        // In $search isn't an array we create an array with the same value
+        // so we don't have to always check if it is an array or not
         foreach ($fields as $ignoredValue) {
           $searches[] = $search;
         }
@@ -258,19 +260,20 @@ class laclasse_addressbook_backend extends rcube_addressbook
       }
 
       // For each element in the array to filter
-      // check if each word matches the element it needs to match
+      // check if each word matches the field it needs to match
       $res = array();
       foreach($all as $item) {
         $match = false;
         foreach ($fields as $index => $field) {
           $word_match = false;
           $words = $searches[$index];
-          foreach($words as $word) {
-            $word_match = $word_match || (strrpos(iconv('UTF-8', 'ASCII//TRANSLIT', strtolower($item[$field])), $word) !== false);
+          if(isset($words)) {
+            foreach($words as $word) {
+              $word_match = $word_match || (strrpos(iconv('UTF-8', 'ASCII//TRANSLIT', strtolower($item[$field])), $word) !== false);
+            }
+            $match = $match || $word_match;
           }
-          $match = $match || $word_match;
         }
-
         if($match && !in_array($item,$res)) {
           array_push($res, $item);
         }

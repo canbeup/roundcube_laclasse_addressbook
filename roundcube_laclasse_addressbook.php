@@ -54,7 +54,7 @@ class roundcube_laclasse_addressbook extends rcube_plugin
        $user_structures = json_decode(interroger_annuaire_ENT(
           $cfg['laclasse_addressbook_api_etab'],
           $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
-          array("profiles.user_id" => $username)));
+          array("expand" => "false", "profiles.user_id" => $username)));
 
         foreach($user_structures as $structure) {
           $found = false;
@@ -78,7 +78,7 @@ class roundcube_laclasse_addressbook extends rcube_plugin
           $cfg['laclasse_addressbook_api_group'],
           $cfg['laclasse_addressbook_app_id'],
           $cfg['laclasse_addressbook_api_key'], 
-          array('structure_id' => 'NULL','sort_dir' => 'asc','sort_col' => 'name','users.user_id' => $username)
+          array('expand' => 'false', 'structure_id' => 'NULL','sort_dir' => 'asc','sort_col' => 'name','users.user_id' => $username)
         ));
 
         if(isset($freeGroups) && !empty($freeGroups)) {

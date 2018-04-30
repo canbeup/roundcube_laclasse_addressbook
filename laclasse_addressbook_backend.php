@@ -62,19 +62,19 @@ class laclasse_addressbook_backend extends rcube_addressbook
       $this->data = json_decode(interroger_annuaire_ENT(
         $cfg['laclasse_addressbook_api_user'],
         $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
-        array('groups.group_id' => $id)));
+        array('groups.group_id' => $id, "seenBy" => $this->user->id)));
     } else {
       $this->data = json_decode(interroger_annuaire_ENT(
         $cfg['laclasse_addressbook_api_user'],
         $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
-        array('profiles.structure_id' => $id)));
+        array('profiles.structure_id' => $id, "seenBy" => $this->user->id)));
     }
 
     if($this->profil_elv) {
       $this->groupsData = json_decode(interroger_annuaire_ENT(
         $cfg['laclasse_addressbook_api_group'],
         $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
-        array("structure_id" => $id, "users.user_id" => $this->user->id)));
+        array("structure_id" => $id, "users.user_id" => $this->user->id, "seenBy" => $this->user->id)));
     } else if(is_numeric($id)) {
       $this->groupsData = json_decode(interroger_annuaire_ENT(
         $cfg['laclasse_addressbook_api_group'],
@@ -84,7 +84,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
       $this->groupsData = json_decode(interroger_annuaire_ENT(
         $cfg['laclasse_addressbook_api_group'],
         $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'],
-        array("structure_id" => $id)));
+        array("structure_id" => $id, "seenBy" => $this->user->id)));
     }
 	$this->load_persons();
 	$this->ready = true;

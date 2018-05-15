@@ -27,8 +27,9 @@ class laclasse_addressbook_backend extends rcube_addressbook
   private $groupsData;
   private $profilesTypes;
 
-  public function __construct($id, $name, $user_data)
+  public function __construct($id, $name, $user_data, $profiles_types)
   {
+    // error_log('/!\ laclasse_addressbook_backend::__construct');
     $this->user = $user_data;
 	$this->id = $id;
     $this->name = $name;
@@ -54,9 +55,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
       $this->profil_elv = false;
     }
 
-    $this->profilesTypes = json_decode(interroger_annuaire_ENT(
-      $cfg['laclasse_addressbook_api_profiles_types'],
-      $cfg['laclasse_addressbook_app_id'], $cfg['laclasse_addressbook_api_key'], array()));
+    $this->profilesTypes = $profiles_types;
 
     if(is_numeric($id)) {
       $this->data = json_decode(interroger_annuaire_ENT(
@@ -330,6 +329,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
 
   public function list_records($cols=null, $subset=0)
   {
+    // error_log('laclasse_addressbook::list_records');
     $all = $this->persons;
 	// filter by the current group (if set)
     if($this->current_group !== null) {
@@ -347,6 +347,7 @@ class laclasse_addressbook_backend extends rcube_addressbook
 
   public function search($fields, $value, $strict=false, $select=true, $nocount=false, $required=array())
   {
+    // error_log('laclasse_addressbook::search');
 	$this->filter = $value;
   $res = $this->filter_result($this->persons, $value, $fields);
 	$this->result = $this->array_to_result($res);

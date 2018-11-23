@@ -88,7 +88,7 @@ class roundcube_laclasse_addressbook extends rcube_plugin
                     $cfg['laclasse_addressbook_api_group'],
                     $cfg['laclasse_addressbook_app_id'],
                     $cfg['laclasse_addressbook_api_key'],
-                    array('expand' => 'false', 'structure_id' => 'NULL', 'sort_dir' => 'asc', 'sort_col' => 'name', 'users.user_id' => $username, "seenBy" => $username)
+                    array('expand' => 'false', 'type' => 'GPL', 'sort_dir' => 'asc', 'sort_col' => 'name', 'users.user_id' => $username, "seenBy" => $username)
                 ));
 
                 if (isset($freeGroups) && !empty($freeGroups)) {
